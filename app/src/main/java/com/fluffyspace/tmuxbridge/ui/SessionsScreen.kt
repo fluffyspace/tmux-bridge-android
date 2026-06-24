@@ -1,6 +1,7 @@
 package com.fluffyspace.tmuxbridge.ui
 
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -42,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.fluffyspace.tmuxbridge.R
 import com.fluffyspace.tmuxbridge.model.Computer
@@ -142,11 +145,11 @@ fun SessionsScreen(
     if (showCreate) {
         CreateSessionDialog(
             onDismiss = { showCreate = false },
-            onCreate = { name ->
+            onCreate = { name, cwd ->
                 showCreate = false
                 scope.launch {
                     try {
-                        val full = TmuxBridgeClient.createSession(computer, name)
+                        val full = TmuxBridgeClient.createSession(computer, name, cwd)
                         toast("Created $full")
                         refreshKey++
                     } catch (e: ApiException) {
@@ -224,26 +227,37 @@ private fun SessionRow(session: Session, onKill: () -> Unit) {
 @Composable
 private fun CreateSessionDialog(
     onDismiss: () -> Unit,
-    onCreate: (String) -> Unit,
+    onCreate: (String, String?) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
+    var cwd by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.create_session)) },
         text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { input ->
-                    // The daemon only accepts alphanumerics, '-' and '_'.
-                    name = input.filter { it.isLetterOrDigit() || it == '-' || it == '_' }
-                },
-                label = { Text(stringResource(R.string.session_name_hint)) },
-                singleLine = true,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { input ->
+                        // The daemon only accepts alphanumerics, '-' and '_'.
+                        name = input.filter { it.isLetterOrDigit() || it == '-' || it == '_' }
+                    },
+                    label = { Text(stringResource(R.string.session_name_hint)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = cwd,
+                    onValueChange = { cwd = it },
+                    label = { Text(stringResource(R.string.cwd_hint)) },
+                    supportingText = { Text(stringResource(R.string.cwd_helper)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    singleLine = true,
+                )
+            }
         },
         confirmButton = {
             TextButton(
-                onClick = { if (name.isNotEmpty()) onCreate(name) },
+                onClick = { if (name.isNotEmpty()) onCreate(name, cwd.trim().ifBlank { null }) },
                 enabled = name.isNotEmpty(),
             ) { Text(stringResource(R.string.create)) }
         },

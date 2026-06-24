@@ -73,10 +73,17 @@ object TmuxBridgeClient {
             }
         }
 
-    /** Creates a session; returns the full server-side name (host-prefixed). */
-    suspend fun createSession(computer: Computer, name: String): String =
+    /**
+     * Creates a session; returns the full server-side name (host-prefixed).
+     *
+     * [cwd], when non-blank, is sent as an absolute working directory for the
+     * session. The daemon validates it and returns 400 if it does not exist or
+     * is not a directory; when omitted the daemon picks its own default.
+     */
+    suspend fun createSession(computer: Computer, name: String, cwd: String? = null): String =
         withContext(Dispatchers.IO) {
             val body = JSONObject().put("name", name)
+            if (!cwd.isNullOrBlank()) body.put("cwd", cwd)
             val (code, json) = request(
                 "${computer.baseUrl}/sessions", "POST",
                 token = computer.token, body = body,

@@ -25,6 +25,8 @@
     <string name="no_sessions">No active sessions.\nTap + to create one.</string>
     <string name="create_session">Create session</string>
     <string name="session_name_hint">Session name (letters, digits, - and _)</string>
+    <string name="cwd_hint">Working directory (optional)</string>
+    <string name="cwd_helper">Absolute path that exists on the server; must be a folder Claude has already trusted.</string>
     <string name="create">Create</string>
     <string name="kill_session">Kill</string>
     <string name="kill_session_q">Kill %1$s?</string>
