@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">tmux-bridge</string>
+
+    <!-- Computers screen -->
+    <string name="computers_title">Paired computers</string>
+    <string name="add_computer">Add computer</string>
+    <string name="no_computers">No computers paired yet.\nTap + to pair one.</string>
+    <string name="remove_computer">Remove</string>
+    <string name="remove_computer_q">Remove %1$s?</string>
+    <string name="remove_computer_msg">This forgets the saved token. The daemon is also asked to revoke it.</string>
+
+    <!-- Pairing screen -->
+    <string name="pair_title">Pair a computer</string>
+    <string name="hint_ip">VPN IP address (e.g. 10.0.0.2)</string>
+    <string name="hint_port">Port</string>
+    <string name="hint_name">Display name (optional)</string>
+    <string name="start_pairing">Start pairing</string>
+    <string name="pairing_instructions">On the server, run:</string>
+    <string name="pairing_code_label">Pairing code</string>
+    <string name="waiting_for_confirmation">Waiting for confirmation on the server…</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Sessions screen -->
+    <string name="new_session">New session</string>
+    <string name="no_sessions">No active sessions.\nTap + to create one.</string>
+    <string name="create_session">Create session</string>
+    <string name="session_name_hint">Session name (letters, digits, - and _)</string>
+    <string name="create">Create</string>
+    <string name="kill_session">Kill</string>
+    <string name="kill_session_q">Kill %1$s?</string>
+    <string name="kill_session_msg">This terminates the tmux session on the server.</string>
+    <string name="refresh">Refresh</string>
+    <string name="attached">attached</string>
+    <string name="detached">detached</string>
+    <string name="windows_count">%1$d windows</string>
+</resources>

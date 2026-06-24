@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The tmux-bridge daemon speaks plain HTTP on the local VPN/LAN, and the server
+  IP is entered by the user at runtime, so cleartext must be permitted globally.
+  This matches the daemon's security model: trusted private network only.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
