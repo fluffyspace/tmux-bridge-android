@@ -39,9 +39,9 @@ Two levels:
 
 ## Tech
 
-- Native Kotlin, Android Views + Material 3, ViewBinding.
-- Minimal dependencies: AndroidX (core/appcompat/recyclerview/constraintlayout/
-  lifecycle), Material Components, and Kotlin coroutines.
+- Native Kotlin, **Jetpack Compose** + Material 3.
+- Single-activity (`MainActivity`); the two-level navigation is a lightweight
+  Compose back stack — no `navigation-compose` dependency.
 - Networking via `HttpURLConnection` (stdlib); JSON via `org.json` (stdlib) —
   no third-party HTTP or JSON library.
 - `minSdk` 26, `targetSdk` / `compileSdk` 35.

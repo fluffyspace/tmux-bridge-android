@@ -15,23 +15,13 @@
         android:theme="@style/Theme.TmuxBridge">
 
         <activity
-            android:name=".ui.ComputersActivity"
+            android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name=".ui.PairActivity"
-            android:exported="false"
-            android:parentActivityName=".ui.ComputersActivity" />
-
-        <activity
-            android:name=".ui.SessionsActivity"
-            android:exported="false"
-            android:parentActivityName=".ui.ComputersActivity" />
 
     </application>
 
