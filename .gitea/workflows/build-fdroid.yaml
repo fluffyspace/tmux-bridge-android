@@ -1,0 +1,75 @@
+name: Build and publish to F-Droid
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle/**"
+      - "gradlew"
+      - ".gitea/workflows/build-fdroid.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: build-fdroid
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build release APK and update F-Droid index
+    runs-on: android
+    container:
+      image: fdroidserver-ci:1
+      volumes:
+        - /mnt/data/services/fdroid/data:/fdroid
+        - /mnt/data/services/act_runner/secrets:/secrets:ro
+        - /mnt/data/services/act_runner/gradle-cache:/root/.gradle
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true -Dorg.gradle.jvmargs=-Xmx3096M"
+      JAVA_HOME: /usr/lib/jvm/java-21-openjdk-amd64
+      GRADLE_USER_HOME: /root/.gradle
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Stage signing keystore
+        run: |
+          install -m 600 /secrets/tmuxbridge.release.keystore.jks app/tmuxbridge.release.keystore.jks
+
+      - name: Build release APK
+        run: |
+          export PATH="$JAVA_HOME/bin:$PATH"
+          export KEYSTORE_PASSPHRASE="$(cat /secrets/tmuxbridge.keystore.passphrase)"
+          java -version
+          ./gradlew :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Inspect build output
+        run: find app/build/outputs/apk -maxdepth 3 -name "*.apk" -printf "%p %s bytes\n"
+
+      - name: Publish APK to F-Droid repo
+        run: |
+          src="$(find app/build/outputs/apk/release -name '*.apk' -print -quit)"
+          test -n "$src" || { echo "no release APK found"; exit 1; }
+          vc="$(grep -oP 'versionCode\s*=\s*\K[0-9]+' app/build.gradle.kts | head -1)"
+          dest="/fdroid/repo/com.fluffyspace.tmuxbridge_${vc}.apk"
+          install -m 644 "$src" "$dest"
+          echo "Published $dest"
+          ls -la /fdroid/repo/ | grep -i tmuxbridge || true
+
+      - name: Run fdroid update
+        run: |
+          export PATH="$JAVA_HOME/bin:$PATH"
+          fdroid --version
+          cd /fdroid
+          fdroid update -c --pretty
+
+      - name: Invalidate Gradle build cache on failure
+        if: failure()
+        run: |
+          rm -rf "$GRADLE_USER_HOME/caches/build-cache-1" \
+                 "$GRADLE_USER_HOME/configuration-cache" \
+                 "$GRADLE_USER_HOME/caches/journal-1" 2>/dev/null || true
+          echo "cleared Gradle build/config cache after failure (kept dependency cache)"

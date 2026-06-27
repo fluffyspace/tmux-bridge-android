@@ -20,8 +20,18 @@ android {
         compose = true
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("tmuxbridge.release.keystore.jks")
+            storePassword = System.getenv("KEYSTORE_PASSPHRASE")
+            keyAlias = "release"
+            keyPassword = System.getenv("KEYSTORE_PASSPHRASE")
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
