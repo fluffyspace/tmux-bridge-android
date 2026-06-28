@@ -24,9 +24,13 @@
     <string name="new_session">New session</string>
     <string name="no_sessions">No active sessions.\nTap + to create one.</string>
     <string name="create_session">Create session</string>
-    <string name="session_name_hint">Session name (letters, digits, - and _)</string>
+    <string name="session_name_hint">Session name (optional)</string>
     <string name="cwd_hint">Working directory (optional)</string>
-    <string name="cwd_helper">Absolute path that exists on the server; must be a folder Claude has already trusted.</string>
+    <string name="cwd_helper">Absolute path on the server; must be a folder Claude has already trusted.</string>
+    <string name="cwd_checking">Checking…</string>
+    <string name="cwd_ok">Directory found</string>
+    <string name="cwd_bad">Path not found or not a directory</string>
+    <string name="recent_paths">Recent paths</string>
     <string name="create">Create</string>
     <string name="kill_session">Kill</string>
     <string name="kill_session_q">Kill %1$s?</string>

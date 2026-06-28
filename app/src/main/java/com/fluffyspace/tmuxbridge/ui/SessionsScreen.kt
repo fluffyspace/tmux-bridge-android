@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -27,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -39,6 +41,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -144,12 +148,13 @@ fun SessionsScreen(
 
     if (showCreate) {
         CreateSessionDialog(
+            computer = computer,
             onDismiss = { showCreate = false },
-            onCreate = { name, cwd ->
+            onCreate = { name, path ->
                 showCreate = false
                 scope.launch {
                     try {
-                        val full = TmuxBridgeClient.createSession(computer, name, cwd)
+                        val full = TmuxBridgeClient.createSession(computer, name, path)
                         toast("Created $full")
                         refreshKey++
                     } catch (e: ApiException) {
@@ -226,11 +231,37 @@ private fun SessionRow(session: Session, onKill: () -> Unit) {
 
 @Composable
 private fun CreateSessionDialog(
+    computer: Computer,
     onDismiss: () -> Unit,
-    onCreate: (String, String?) -> Unit,
+    onCreate: (String?, String?) -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
     var cwd by remember { mutableStateOf("") }
+    var pathHistory by remember { mutableStateOf<List<String>>(emptyList()) }
+    var pathChecking by remember { mutableStateOf(false) }
+    var pathValid by remember { mutableStateOf<Boolean?>(null) }
+
+    LaunchedEffect(Unit) {
+        pathHistory = try {
+            TmuxBridgeClient.fetchPathHistory(computer)
+        } catch (_: Exception) { emptyList() }
+    }
+
+    LaunchedEffect(cwd) {
+        if (cwd.isBlank()) {
+            pathChecking = false
+            pathValid = null
+            return@LaunchedEffect
+        }
+        pathChecking = true
+        pathValid = null
+        delay(500)
+        pathValid = try {
+            TmuxBridgeClient.checkPath(computer, cwd.trim())
+        } catch (_: Exception) { null }
+        pathChecking = false
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.create_session)) },
@@ -239,7 +270,6 @@ private fun CreateSessionDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { input ->
-                        // The daemon only accepts alphanumerics, '-' and '_'.
                         name = input.filter { it.isLetterOrDigit() || it == '-' || it == '_' }
                     },
                     label = { Text(stringResource(R.string.session_name_hint)) },
@@ -249,16 +279,48 @@ private fun CreateSessionDialog(
                     value = cwd,
                     onValueChange = { cwd = it },
                     label = { Text(stringResource(R.string.cwd_hint)) },
-                    supportingText = { Text(stringResource(R.string.cwd_helper)) },
+                    isError = pathValid == false,
+                    supportingText = {
+                        when {
+                            pathChecking -> Text(stringResource(R.string.cwd_checking))
+                            pathValid == true -> Text(
+                                stringResource(R.string.cwd_ok),
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            pathValid == false -> Text(stringResource(R.string.cwd_bad))
+                            else -> Text(stringResource(R.string.cwd_helper))
+                        }
+                    },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     singleLine = true,
                 )
+                if (pathHistory.isNotEmpty()) {
+                    Text(
+                        stringResource(R.string.recent_paths),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(pathHistory) { path ->
+                            SuggestionChip(
+                                onClick = { cwd = path },
+                                label = {
+                                    Text(
+                                        path,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                },
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { if (name.isNotEmpty()) onCreate(name, cwd.trim().ifBlank { null }) },
-                enabled = name.isNotEmpty(),
+                onClick = { onCreate(name.trim().ifBlank { null }, cwd.trim().ifBlank { null }) },
+                enabled = pathValid != false,
             ) { Text(stringResource(R.string.create)) }
         },
         dismissButton = {

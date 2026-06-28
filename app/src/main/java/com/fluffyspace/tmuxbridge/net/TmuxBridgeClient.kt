@@ -76,20 +76,40 @@ object TmuxBridgeClient {
     /**
      * Creates a session; returns the full server-side name (host-prefixed).
      *
-     * [cwd], when non-blank, is sent as an absolute working directory for the
-     * session. The daemon validates it and returns 400 if it does not exist or
-     * is not a directory; when omitted the daemon picks its own default.
+     * [name], when null/blank, is omitted and the daemon auto-generates one.
+     * [path], when non-blank, sets the session's starting directory.
      */
-    suspend fun createSession(computer: Computer, name: String, cwd: String? = null): String =
+    suspend fun createSession(computer: Computer, name: String? = null, path: String? = null): String =
         withContext(Dispatchers.IO) {
-            val body = JSONObject().put("name", name)
-            if (!cwd.isNullOrBlank()) body.put("cwd", cwd)
+            val body = JSONObject()
+            if (!name.isNullOrBlank()) body.put("name", name)
+            if (!path.isNullOrBlank()) body.put("path", path)
             val (code, json) = request(
                 "${computer.baseUrl}/sessions", "POST",
                 token = computer.token, body = body,
             )
             if (code != 201 || json == null) throw errorFrom(code, json, "Could not create session")
             json.getString("name")
+        }
+
+    /** Returns the server's recently-used path list, newest first. Empty on any error. */
+    suspend fun fetchPathHistory(computer: Computer): List<String> =
+        withContext(Dispatchers.IO) {
+            val (code, json) =
+                request("${computer.baseUrl}/session-paths", "GET", token = computer.token)
+            if (code != 200 || json == null) return@withContext emptyList()
+            val arr = json.getJSONArray("paths")
+            (0 until arr.length()).map { arr.getString(it) }
+        }
+
+    /** Returns true if [path] exists and is a directory on the server. */
+    suspend fun checkPath(computer: Computer, path: String): Boolean =
+        withContext(Dispatchers.IO) {
+            val encoded = Uri.encode(path)
+            val (code, json) =
+                request("${computer.baseUrl}/check-path?path=$encoded", "GET", token = computer.token)
+            if (code != 200 || json == null) return@withContext false
+            json.optBoolean("exists", false) && json.optBoolean("is_dir", false)
         }
 
     suspend fun killSession(computer: Computer, name: String) =
