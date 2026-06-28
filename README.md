@@ -1,9 +1,18 @@
 # tmux-bridge (Android client)
 
-A native Android app for managing remote Claude Code `tmux` sessions through the
-[tmux-bridge](https://github.com/fluffyspace/tmux-bridge) daemon, over a local
-VPN/LAN. No cloud, no accounts — it talks plain HTTP to the daemon using a
-bearer token obtained during pairing.
+**Start and manage Claude Code agents on your dev box, straight from your phone.**
+
+A native Android app that pairs with the
+[tmux-bridge](https://github.com/fluffyspace/tmux-bridge) daemon to spin up,
+list and kill remote [Claude Code](https://docs.claude.com/en/docs/claude-code)
+`tmux` sessions over your own VPN/LAN. Each session runs
+`claude --remote-control`, so once it's up you hop into **Claude's official app**
+to do the actual coding — this app is the launcher and switchboard for the agents
+running on your real machine.
+
+No cloud, no accounts, no telemetry: it talks plain HTTP to *your* daemon using a
+bearer token obtained during a one-time 6-digit pairing. Built with Jetpack
+Compose + Material 3, stdlib-only networking, and it's F-Droid-ready.
 
 ## What it does
 
@@ -13,8 +22,10 @@ bearer token obtained during pairing.
   app-private storage.
 - **List sessions** — for each computer, fetch and show the active tmux sessions
   (name, attached/detached, window count).
-- **Create a session** — prompt for a name; the daemon prefixes it with the
-  machine's short hostname (e.g. `kodba-refactor-auth`).
+- **Create a session** — optional name (auto-generated if blank); the daemon
+  prefixes it with the machine's short hostname (e.g. `kodba-refactor-auth`).
+  Optionally set a working directory, with recently-used paths offered as
+  tappable chips and live validation against the server as you type.
 - **Kill a session** — with a confirmation dialog.
 
 ## UI
@@ -33,8 +44,10 @@ Two levels:
 | `POST` | `/pair` | no | start pairing → `{request_id, pairing_code}` |
 | `GET` | `/pair/<id>` | no | poll until `{status: approved, token}` |
 | `GET` | `/sessions` | Bearer | list sessions |
-| `POST` | `/sessions` | Bearer | create `{ "name": "..." }` |
+| `POST` | `/sessions` | Bearer | create `{ "name"?: "...", "path"?: "/abs" }` |
 | `DELETE` | `/sessions/<name>` | Bearer | kill |
+| `GET` | `/session-paths` | Bearer | recent working directories for the chips |
+| `GET` | `/check-path?path=…` | Bearer | live validation of a typed path |
 | `DELETE` | `/devices/self` | Bearer | revoke token on remove |
 
 ## Tech
